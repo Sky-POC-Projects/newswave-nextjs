@@ -8,10 +8,17 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: { // Added container settings
+      center: true,
+      padding: "1rem", // Default padding for containers
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['PT Sans', 'sans-serif'],
+        headline: ['Playfair Display', 'serif'],
         code: ['monospace'],
       },
       colors: {
