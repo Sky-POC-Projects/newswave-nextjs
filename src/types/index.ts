@@ -22,8 +22,11 @@ export interface Publisher {
 // API specific types based on Swagger for clarity
 export interface ApiNewsItem {
   id: number;
-  title: string | null;
+  title: string;
   body: string | null;
+  publishedAt: string;
+  publisherId: number;
+  publisherName: string;
 }
 
 export interface ApiPublisherCreateRequest {

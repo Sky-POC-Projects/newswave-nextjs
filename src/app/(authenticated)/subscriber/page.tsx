@@ -4,8 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSubscriptions } from '@/hooks/useSubscriptions'; // For context if needed, not directly for subscribed IDs here
 import { useAuth } from '@/hooks/useAuth';
-import { getSubscriberFeed, mapApiNewsItemToArticle } from '@/services/apiService';
-import type { Article, Publisher } from '@/types';
+import { getSubscriberFeed } from '@/services/apiService';
+import type { ApiNewsItem, Article } from '@/types';
 import ArticleCard from '@/components/ArticleCard';
 import { Loader2, FileText, Rss } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +23,23 @@ function SubscriberFeedContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(10);
 
+  // Helper function to map ApiNewsItem to our app's Article type
+  function mapApiNewsItemToArticle(newsItem: ApiNewsItem): Article {
+    // The feed from API doesn't contain authorId, authorName, publishDate, or imageUrl.
+    // We'll have to use placeholders or derive them if possible.
+    // For now, author info is missing. This is a limitation.
+    return {
+      id: newsItem.id,
+      title: newsItem.title,
+      content: newsItem.body || '',
+      // summary: newsItem.body ? (newsItem.body.length > 100 ? newsItem.body.substring(0, 100) + '...' : newsItem.body) : '', // Basic summary
+      publishDate: new Date(newsItem.publishedAt).toISOString(), // Placeholder publish date
+      imageUrl: `https://placehold.co/600x400.png?text=Article+${newsItem.id}`, // Placeholder image
+      authorId: newsItem.publisherId,
+      authorName: newsItem.publisherName,
+    };
+  }
+
   useEffect(() => {
     const countParam = searchParams.get('count');
     if (countParam && !isNaN(parseInt(countParam))) {
@@ -38,7 +55,7 @@ function SubscriberFeedContent() {
       getSubscriberFeed(subscriberId, displayCount)
         .then(apiNewsItems => {
           // Pass mockPublishers for potential enrichment, though current mapApiNewsItemToArticle doesn't use it heavily.
-          const articles = apiNewsItems.map(item => mapApiNewsItemToArticle(item, mockPublishers));
+          const articles = apiNewsItems.map(item => mapApiNewsItemToArticle(item));
           setFeedArticles(articles);
         })
         .catch(error => {

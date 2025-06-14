@@ -127,18 +127,3 @@ export async function getSubscriberFeed(subscriberId: number, count: number = 10
   });
 }
 
-// Helper function to map ApiNewsItem to our app's Article type
-export async function mapApiNewsItemToArticle(newsItem: ApiNewsItem, publishers: Publisher[]): Promise<Article> {
-  // The feed from API doesn't contain authorId, authorName, publishDate, or imageUrl.
-  // We'll have to use placeholders or derive them if possible.
-  // For now, author info is missing. This is a limitation.
-  return {
-    id: newsItem.id,
-    title: newsItem.title || 'Untitled Article',
-    content: newsItem.body || '',
-    // summary: newsItem.body ? (newsItem.body.length > 100 ? newsItem.body.substring(0, 100) + '...' : newsItem.body) : '', // Basic summary
-    publishDate: new Date().toISOString(), // Placeholder publish date
-    imageUrl: `https://placehold.co/600x400.png?text=Article+${newsItem.id}`, // Placeholder image
-    // authorId and authorName are missing from this API endpoint
-  };
-}
