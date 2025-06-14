@@ -2,25 +2,25 @@ export type UserRole = 'publisher' | 'subscriber';
 
 // Corresponds to NewsItem from the API for feed
 export interface Article {
-  id: number; // Changed from string to number
+  id: number; 
   title: string;
-  content: string; // Maps to 'body' from API's NewsItem
-  summary?: string; // Might be generated client-side or be part of content
-  authorId?: number; // Changed from string to number. Optional as feed API doesn't provide it.
-  authorName?: string; // Optional as feed API doesn't provide it.
-  publishDate: string; // ISO string. Feed API doesn't provide, will need to be handled.
-  imageUrl?: string; // Optional as feed API doesn't provide it.
+  content: string; 
+  summary?: string; 
+  authorId?: number; 
+  authorName?: string; 
+  publishDate: string; // ISO string. API provides publishedAt
+  imageUrl?: string; 
 }
 
 export interface Publisher {
-  id: number; // Changed from string to number
+  id: number; 
   name: string;
-  description?: string; // Added from API capability
-  avatarUrl?: string; // Kept for display, though API doesn't provide
+  description?: string; 
+  avatarUrl?: string; // Not provided by /api/Publishers, PublisherCard handles missing.
 }
 
 export interface Subscriber {
-  id: number; // Changed from string to number
+  id: number; 
   name: string;
 }
 
@@ -29,9 +29,9 @@ export interface ApiNewsItem {
   id: number;
   title: string;
   body: string | null;
-  publishedAt: string;
-  publisherId: number;
-  publisherName: string;
+  publishedAt: string; // This field is present in the feed API response
+  publisherId: number; // This field is present in the feed API response
+  publisherName: string; // This field is present in the feed API response
 }
 
 export interface ApiPublisherCreateRequest {

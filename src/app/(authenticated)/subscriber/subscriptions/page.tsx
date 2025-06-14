@@ -1,21 +1,63 @@
 // src/app/(authenticated)/subscriber/subscriptions/page.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
 import PublisherCard from '@/components/PublisherCard';
-import { Loader2, Rss } from 'lucide-react';
-import { mockPublishers } from '@/data/mock'; // Import mockPublishers directly
-import type { Publisher } from '@/types'; // Ensure Publisher type is available
+import { Loader2, Rss, ServerCrash } from 'lucide-react';
+import type { Publisher } from '@/types';
+import { getAllPublishers } from '@/services/apiService';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SubscriptionManagementPage() {
-  // isLoading from useSubscriptions now primarily reflects ongoing API call status for sub/unsub
   const { subscribedPublisherIds, subscribe, unsubscribe, isLoading: isSubscriptionOperationLoading } = useSubscriptions();
+  const { toast } = useToast();
   
-  // Get the list of all available publishers directly from mock data
-  const allPublishers: Publisher[] = mockPublishers;
+  const [allPublishers, setAllPublishers] = useState<Publisher[]>([]);
+  const [isLoadingPublishers, setIsLoadingPublishers] = useState(true);
+  const [errorLoadingPublishers, setErrorLoadingPublishers] = useState<string | null>(null);
 
-  // The main page loader for "Loading publishers..." is removed because `allPublishers` is now synchronous.
-  // `isSubscriptionOperationLoading` can be used to show loading states on individual cards or disable buttons if needed.
+  useEffect(() => {
+    async function fetchPublishers() {
+      try {
+        setIsLoadingPublishers(true);
+        setErrorLoadingPublishers(null);
+        const publishers = await getAllPublishers();
+        setAllPublishers(publishers);
+      } catch (error) {
+        console.error("Failed to fetch publishers:", error);
+        setErrorLoadingPublishers("Could not load publishers. Please try again later.");
+        toast({
+          title: "Error Loading Publishers",
+          description: "Failed to fetch the list of available publishers from the server.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingPublishers(false);
+      }
+    }
+    fetchPublishers();
+  }, [toast]);
+
+  if (isLoadingPublishers) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-lg text-muted-foreground">Loading publishers...</p>
+      </div>
+    );
+  }
+
+  if (errorLoadingPublishers) {
+    return (
+      <div className="text-center py-12 border-2 border-dashed border-destructive/50 rounded-lg bg-destructive/10">
+        <ServerCrash className="mx-auto h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-xl font-semibold text-destructive mb-2">Failed to Load Publishers</h2>
+        <p className="text-muted-foreground mb-6">{errorLoadingPublishers}</p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-8">
@@ -24,8 +66,8 @@ export default function SubscriptionManagementPage() {
         <p className="text-muted-foreground max-w-xl mx-auto">
           Discover and subscribe to publishers to personalize your news feed. Unsubscribe anytime.
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          (Note: Publisher list is from local data. Subscriptions are managed via API. Initial subscriptions are not loaded from API due to its limitations.)
+         <p className="text-xs text-muted-foreground mt-1">
+          (Subscriptions are managed via API. Initial subscriptions are not pre-loaded from API due to its limitations.)
         </p>
       </div>
 
@@ -33,7 +75,7 @@ export default function SubscriptionManagementPage() {
          <div className="text-center py-12 border-2 border-dashed border-border rounded-lg bg-card">
           <Rss className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">No Publishers Available</h2>
-          <p className="text-muted-foreground">There are currently no publishers listed in the mock data. Check back later or update the mock data.</p>
+          <p className="text-muted-foreground">There are currently no publishers listed. Check back later.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">

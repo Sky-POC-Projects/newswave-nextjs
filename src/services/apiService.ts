@@ -59,17 +59,22 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 }
 
 // --- Publisher Endpoints ---
+export async function getAllPublishers(): Promise<Publisher[]> {
+  // GET /api/Publishers - returns an array of publishers.
+  // API response example: [{"id": 1, "name": "Akash", "newsFeed": null}]
+  // Our Publisher type expects id, name, optional description, optional avatarUrl.
+  // We'll map the API response, providing defaults/placeholders if necessary.
+  const apiPublishers = await apiFetch<Array<{id: number, name: string, description?: string | null, newsFeed?: any}>>(`/api/Publishers`, { method: 'GET' });
+  return apiPublishers.map(p => ({
+    id: p.id,
+    name: p.name,
+    description: p.description || undefined, // Use undefined if null or missing
+    avatarUrl: undefined, // API doesn't provide this, PublisherCard will use placeholder
+  }));
+}
+
 export async function createPublisher(request: ApiPublisherCreateRequest): Promise<{ id: number, name: string | null, description: string | null }> {
-  // API POST /api/Publishers returns 200 OK, assuming it returns the created publisher with ID
-  // This is an assumption as swagger doesn't specify POST response body. A common pattern is returning the created resource.
-  // If it just returns 200 OK, we might not get the ID back directly this way.
-  // For now, let's assume it returns something like {id: 123, name: "...", description: "..."}
-  // The swagger for POST /api/Publishers doesn't define a response body, just "200 OK".
-  // This is a problem. We need the ID. Let's *assume* it's returned.
-  // If not, this flow is broken.
-  // For now, we'll try to parse JSON. If it's empty, we are in trouble for ID.
-  // **Update:** The API test shows it returns the ID in the response body, e.g. `123` (just the ID as int).
-  // So the return type should be Promise<number>
+  // API POST /api/Publishers returns 200 OK, and the created publisher object (including ID).
    const publisher = await apiFetch<Publisher>(`/api/Publishers`, {
     method: 'POST',
     body: JSON.stringify(request),
@@ -80,9 +85,13 @@ export async function createPublisher(request: ApiPublisherCreateRequest): Promi
 export async function getPublisher(id: number): Promise<Publisher> {
   // GET /api/Publishers/{id} - swagger doesn't specify response schema.
   // Assuming it returns something like { id: number, name: string, description?: string }
-  // Let's assume it matches our Publisher type more or less.
-  const response =  await apiFetch<Publisher>(`/api/Publishers/${id}`, { method: 'GET' });
-  return response; // This might need mapping if the API response is different.
+  const apiPublisher =  await apiFetch<{id: number, name: string, description?: string | null}>(`/api/Publishers/${id}`, { method: 'GET' });
+  return {
+    id: apiPublisher.id,
+    name: apiPublisher.name,
+    description: apiPublisher.description || undefined,
+    avatarUrl: undefined, // API doesn't provide this
+  };
 }
 
 
@@ -95,8 +104,7 @@ export async function publishArticleApi(publisherId: number, request: ApiPublish
 
 // --- Subscriber Endpoints ---
 export async function createSubscriber(request: ApiSubscriberCreateRequest): Promise<{ id: number, name: string }> {
-  // Similar to createPublisher, POST /api/Subscribers. Assuming it returns ID.
-  // API test shows it returns the ID in the response body, e.g. `123` (just the ID as int).
+  // API test shows it returns the ID in the response body as part of subscriber object.
   const subscriber = await apiFetch<Subscriber>(`/api/Subscribers`, {
     method: 'POST',
     body: JSON.stringify(request),
@@ -122,8 +130,34 @@ export async function unsubscribeFromPublisher(subscriberId: number, publisherId
 }
 
 export async function getSubscriberFeed(subscriberId: number, count: number = 10): Promise<ApiNewsItem[]> {
-  return apiFetch<ApiNewsItem[]>(`/api/Subscribers/${subscriberId}/feed?count=${count}`, {
+   // The API returns additional fields publisherId and publisherName in NewsItem
+   const apiResponse = await apiFetch<Array<ApiNewsItem & { publisherId: number; publisherName: string }>>(`/api/Subscribers/${subscriberId}/feed?count=${count}`, {
     method: 'GET',
   });
+  // Ensure the response items match the expected ApiNewsItem structure for mapping
+  return apiResponse.map(item => ({
+    id: item.id,
+    title: item.title,
+    body: item.body,
+    publishedAt: item.publishedAt, // publishedAt is a string, not in our simple NewsItem from swagger before
+    publisherId: item.publisherId,
+    publisherName: item.publisherName,
+  }));
 }
 
+
+// Helper function to map ApiNewsItem to our app's Article type
+// This function is used in subscriber feed page, needs to be async if exported from a 'use server' file.
+export async function mapApiNewsItemToArticle(newsItem: ApiNewsItem): Promise<Article> {
+  // The feed from API now includes publisherId and publisherName.
+  // It also includes publishedAt which we can use.
+  return {
+    id: newsItem.id,
+    title: newsItem.title || 'Untitled Article',
+    content: newsItem.body || '',
+    publishDate: newsItem.publishedAt || new Date().toISOString(), // Use API's publishedAt
+    imageUrl: `https://placehold.co/600x400.png?text=News`, // Placeholder image, API for feed doesn't provide this
+    authorId: newsItem.publisherId, 
+    authorName: newsItem.publisherName,
+  };
+}
