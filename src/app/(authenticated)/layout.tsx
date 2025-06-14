@@ -1,6 +1,6 @@
 'use client';
 import AppHeader from '@/components/AppHeader';
-import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarFooter, SidebarInset } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { LayoutDashboard, Newspaper as NewspaperIcon, PlusSquare, Users, LogOut, UserCircle } from 'lucide-react';
