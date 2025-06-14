@@ -23,7 +23,7 @@ export default function PostArticleForm() {
   const [generatedSummary, setGeneratedSummary] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const { toast } = useToast();
-  const { userId: publisherId } = useAuth();
+  const { userId: publisherApiId, role } = useAuth(); // userId is now numeric publisher ID
   const router = useRouter();
 
   const form = useForm<ArticleFormData>({
@@ -31,7 +31,7 @@ export default function PostArticleForm() {
     defaultValues: {
       title: '',
       content: '',
-      imageUrl: '',
+      imageUrl: '', // Still in form, but not sent to current API
     },
   });
 
@@ -74,7 +74,7 @@ export default function PostArticleForm() {
   };
 
   const onSubmit = async (data: ArticleFormData) => {
-    if (!generatedSummary) {
+    if (!generatedSummary) { // Summary is still a local requirement before showing confirmation
       toast({
         title: "Summary Required",
         description: "Please generate and review the summary before posting.",
@@ -86,25 +86,30 @@ export default function PostArticleForm() {
   };
 
   const handleConfirmPost = async () => {
-    if (!publisherId) {
-      toast({ title: "Authentication Error", description: "Publisher ID not found.", variant: "destructive" });
+    if (!publisherApiId || role !== 'publisher') {
+      toast({ title: "Authentication Error", description: "Publisher ID not found or invalid role.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
     const values = form.getValues();
     try {
-      const result = await postArticleAction(values.title, values.content, generatedSummary!, values.imageUrl, publisherId);
+      // postArticleAction now takes publisherApiId as string
+      // summary and imageUrl are not directly sent to the publish API endpoint from actions.ts
+      const result = await postArticleAction(values.title, values.content, publisherApiId.toString());
       if (result.success) {
         toast({
           title: "Article Posted!",
-          description: `"${values.title}" has been successfully posted.`,
+          description: `"${values.title}" has been successfully posted via API.`,
           variant: "default",
           action: <CheckCircle className="text-green-500" />,
         });
         form.reset();
         setGeneratedSummary(null);
         setShowConfirmation(false);
-        router.push('/publisher'); // Redirect to publisher dashboard
+        // The /publisher page still uses mock data, so a redirect might not show the new article unless mock data is also updated.
+        // For API consistency, it's better if /publisher page also fetches from API.
+        // For now, redirecting as before.
+        router.push('/publisher'); 
       } else {
         toast({
           title: "Posting Failed",
@@ -167,16 +172,17 @@ export default function PostArticleForm() {
                   <FormItem>
                     <FormLabel className="text-base">Image URL (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/image.png" {...field} />
+                      <Input placeholder="https://placehold.co/image.png" {...field} />
                     </FormControl>
-                    <FormMessage />
+                     <FormMessage />
+                    <p className="text-xs text-muted-foreground">Note: Image URL is for local display if used by ArticleCard, not sent to the current publish API.</p>
                   </FormItem>
                 )}
               />
 
               <div className="space-y-4 rounded-md border border-dashed border-primary/50 p-4 bg-primary/5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold text-primary">AI Summary</Label>
+                  <Label className="text-base font-semibold text-primary">AI Summary (Review Step)</Label>
                   <Button type="button" onClick={handleGenerateSummary} disabled={isLoadingSummary} variant="outline" size="sm">
                     {isLoadingSummary ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -191,12 +197,13 @@ export default function PostArticleForm() {
                     <p className="text-foreground/80">{generatedSummary}</p>
                   </div>
                 )}
-                {isLoadingSummary && (
+                 {isLoadingSummary && (
                    <div className="flex items-center text-sm text-muted-foreground">
                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                      <span>Generating summary, please wait...</span>
                    </div>
                 )}
+                <p className="text-xs text-muted-foreground">The generated summary is for your review before posting. It is not directly sent to the API with the article content for this version.</p>
               </div>
 
             </CardContent>
@@ -215,23 +222,25 @@ export default function PostArticleForm() {
           <AlertDialogHeader>
             <AlertDialogTitle className="font-headline">Confirm Article Post</AlertDialogTitle>
             <AlertDialogDescription>
-              Please review the article details and the AI-generated summary.
+              Please review the article details. The content will be posted to the API.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="max-h-96 overflow-y-auto space-y-4 p-1">
             <h3 className="font-semibold">Title:</h3>
             <p className="text-sm text-muted-foreground">{form.getValues('title')}</p>
-            <h3 className="font-semibold">Summary:</h3>
+            <h3 className="font-semibold">Content (to be sent as body):</h3>
+            <p className="text-sm text-muted-foreground line-clamp-3 hover:line-clamp-none">{form.getValues('content')}</p>
+            <h3 className="font-semibold">Generated Summary (for your review only):</h3>
             <p className="text-sm text-muted-foreground">{generatedSummary}</p>
             {form.getValues('imageUrl') && (
               <>
-                <h3 className="font-semibold">Image URL:</h3>
+                <h3 className="font-semibold">Image URL (local use):</h3>
                 <p className="text-sm text-muted-foreground break-all">{form.getValues('imageUrl')}</p>
               </>
             )}
              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700 text-sm flex items-start">
                 <AlertTriangle className="h-5 w-5 mr-2 shrink-0 mt-0.5" />
-                <span>Ensure the AI-generated summary accurately reflects your article's content before proceeding.</span>
+                <span>Ensure the AI-generated summary accurately reflects your article's content before proceeding. The full content will be published.</span>
             </div>
           </div>
           <AlertDialogFooter>

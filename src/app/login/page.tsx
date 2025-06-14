@@ -7,46 +7,40 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockPublishers } from '@/data/mock';
-import type { UserRole, Publisher } from '@/types';
-import { Newspaper, LogIn } from 'lucide-react';
+import { Input } from '@/components/ui/input'; // Changed from Select
+import type { UserRole } from '@/types';
+import { Newspaper, LogIn, User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('subscriber');
-  const [selectedPublisherId, setSelectedPublisherId] = useState<string>('');
-  const [publishers, setPublishers] = useState<Publisher[]>([]);
-  const { login, role: currentRole, isLoading: authIsLoading } = useAuth();
+  const [name, setName] = useState<string>(''); // For publisher or subscriber name
+  const { login, role: currentRole, isLoading: authIsLoading, userId } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!authIsLoading && currentRole) {
+    if (!authIsLoading && currentRole && userId) {
       if (currentRole === 'publisher') router.push('/publisher');
       else router.push('/subscriber');
     }
-  }, [currentRole, authIsLoading, router]);
+  }, [currentRole, userId, authIsLoading, router]);
   
-  useEffect(() => {
-    // In a real app, fetch publishers. Here we use mock.
-    setPublishers(mockPublishers);
-    if (mockPublishers.length > 0) {
-      setSelectedPublisherId(mockPublishers[0].id);
-    }
-  }, []);
 
-  const handleLogin = () => {
-    if (selectedRole === 'publisher') {
-      if (!selectedPublisherId) {
-        alert('Please select a publisher.'); // Or use a toast
-        return;
-      }
-      login(selectedRole, selectedPublisherId);
-    } else {
-      login(selectedRole);
+  const handleLogin = async () => {
+    if (!name.trim()) {
+      toast({
+        title: "Name Required",
+        description: `Please enter a ${selectedRole} name.`,
+        variant: "destructive",
+      });
+      return;
     }
+    await login(selectedRole, name.trim());
   };
 
-  if (authIsLoading || (!authIsLoading && currentRole)) {
+  if (authIsLoading || (!authIsLoading && currentRole && userId)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Newspaper className="h-12 w-12 animate-pulse text-primary" />
@@ -62,7 +56,7 @@ export default function LoginPage() {
             <Newspaper className="h-8 w-8" />
           </div>
           <CardTitle className="font-headline text-3xl">Welcome to NewsWave</CardTitle>
-          <CardDescription>Please select your role to continue.</CardDescription>
+          <CardDescription>Please select your role and enter your name to continue.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -84,27 +78,31 @@ export default function LoginPage() {
             </RadioGroup>
           </div>
 
-          {selectedRole === 'publisher' && (
-            <div className="space-y-2">
-              <Label htmlFor="publisher-select" className="text-base">Select Publisher</Label>
-              <Select value={selectedPublisherId} onValueChange={setSelectedPublisherId}>
-                <SelectTrigger id="publisher-select" className="w-full">
-                  <SelectValue placeholder="Select a publisher" />
-                </SelectTrigger>
-                <SelectContent>
-                  {publishers.map((publisher) => (
-                    <SelectItem key={publisher.id} value={publisher.id}>
-                      {publisher.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label htmlFor="name-input" className="text-base">
+              {selectedRole === 'publisher' ? 'Publisher Name' : 'Subscriber Name'}
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input 
+                id="name-input" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                placeholder={`Enter your ${selectedRole} name`}
+                className="pl-10"
+              />
             </div>
-          )}
+          </div>
+
         </CardContent>
         <CardFooter>
-          <Button onClick={handleLogin} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" size="lg">
-            <LogIn className="mr-2 h-5 w-5" />
+          <Button 
+            onClick={handleLogin} 
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" 
+            size="lg"
+            disabled={authIsLoading}
+          >
+            {authIsLoading ? <Newspaper className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
             Login as {selectedRole === 'publisher' ? 'Publisher' : 'Subscriber'}
           </Button>
         </CardFooter>

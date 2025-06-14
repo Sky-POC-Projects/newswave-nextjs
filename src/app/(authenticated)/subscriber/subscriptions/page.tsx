@@ -7,7 +7,7 @@ import { Loader2, Rss } from 'lucide-react';
 export default function SubscriptionManagementPage() {
   const { allPublishers, subscribedPublisherIds, subscribe, unsubscribe, isLoading } = useSubscriptions();
 
-  if (isLoading) {
+  if (isLoading && allPublishers.length === 0) { // Show loader if still fetching or processing initial data
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -23,6 +23,7 @@ export default function SubscriptionManagementPage() {
         <p className="text-muted-foreground max-w-xl mx-auto">
           Discover and subscribe to publishers to personalize your news feed. Unsubscribe anytime.
         </p>
+        <p className="text-xs text-muted-foreground mt-1"> (Note: Publisher list is currently from local data. Subscriptions are managed via API but list might not persist perfectly across sessions due to API limitations.)</p>
       </div>
 
       {allPublishers.length === 0 ? (
@@ -35,11 +36,11 @@ export default function SubscriptionManagementPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
           {allPublishers.map((publisher) => (
             <PublisherCard
-              key={publisher.id}
+              key={publisher.id} // publisher.id is now number
               publisher={publisher}
               isSubscribed={subscribedPublisherIds.includes(publisher.id)}
-              onSubscribe={subscribe}
-              onUnsubscribe={unsubscribe}
+              onSubscribe={() => subscribe(publisher.id)} // Pass numeric ID
+              onUnsubscribe={() => unsubscribe(publisher.id)} // Pass numeric ID
             />
           ))}
         </div>

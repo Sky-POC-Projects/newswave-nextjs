@@ -1,23 +1,28 @@
 'use client';
 import AppHeader from '@/components/AppHeader';
-import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarInset, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { LayoutDashboard, Newspaper as NewspaperIcon, PlusSquare, Users, Settings, LogOut, UserCircle } from 'lucide-react';
+import { LayoutDashboard, Newspaper as NewspaperIcon, PlusSquare, Users, LogOut, UserCircle } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mockPublishers } from '@/data/mock';
+import { mockPublishers } from '@/data/mock'; // Still used for publisher avatar if needed, based on ID.
 
 export default function AuthenticatedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { role, userId, logout } = useAuth();
+  const { role, userId, userName, logout } = useAuth(); // userId is numeric, userName available
   const pathname = usePathname();
 
-  const publisher = role === 'publisher' && userId ? mockPublishers.find(p => p.id === userId) : null;
+  // Find publisher details from mock data for avatar, using numeric userId
+  // This assumes mockPublishers contains a publisher with the logged-in userId for avatar purposes.
+  // In a real scenario, publisher details (like avatar) would come from an API or be part of useAuth state.
+  const publisherDetails = role === 'publisher' && userId 
+    ? mockPublishers.find(p => p.id === userId) 
+    : null;
 
   const publisherNavItems = [
     { href: '/publisher', label: 'My Articles', icon: LayoutDashboard },
@@ -27,7 +32,6 @@ export default function AuthenticatedLayout({
   const subscriberNavItems = [
     { href: '/subscriber', label: 'News Feed', icon: NewspaperIcon },
     { href: '/subscriber/subscriptions', label: 'Manage Subscriptions', icon: Users },
-    // Future: { href: '/subscriber/settings', label: 'Feed Settings', icon: Settings },
   ];
 
   const navItems = role === 'publisher' ? publisherNavItems : subscriberNavItems;
@@ -41,19 +45,20 @@ export default function AuthenticatedLayout({
         className="border-r bg-card shadow-md"
       >
         <SidebarHeader className="p-4 flex flex-col items-center group-data-[collapsible=icon]:hidden">
-           {role === 'publisher' && publisher ? (
+           {role === 'publisher' ? (
             <>
               <Avatar className="h-16 w-16 mb-2">
-                <AvatarImage src={publisher.avatarUrl} alt={publisher.name} data-ai-hint="logo publisher" />
-                <AvatarFallback>{publisher.name.substring(0,2).toUpperCase()}</AvatarFallback>
+                {/* Use publisherDetails from mock for avatar, or a fallback */}
+                <AvatarImage src={publisherDetails?.avatarUrl || `https://placehold.co/100x100.png?text=${userName ? userName.substring(0,2).toUpperCase() : 'P'}`} alt={userName || 'Publisher'} data-ai-hint="logo publisher" />
+                <AvatarFallback>{userName ? userName.substring(0,2).toUpperCase() : "P"}</AvatarFallback>
               </Avatar>
-              <p className="font-semibold text-sm">{publisher.name}</p>
+              <p className="font-semibold text-sm">{userName || 'Publisher'}</p>
               <p className="text-xs text-muted-foreground capitalize">{role}</p>
             </>
-           ) : (
+           ) : ( // Subscriber
             <>
               <UserCircle className="h-16 w-16 mb-2 text-primary"/>
-              <p className="font-semibold text-sm capitalize">{role}</p>
+              <p className="font-semibold text-sm capitalize">{userName || role}</p>
             </>
            )}
         </SidebarHeader>

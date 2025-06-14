@@ -5,14 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { LogOut, Newspaper, UserCircle } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { mockPublishers } from '@/data/mock'; // For publisher name
+// mockPublishers is no longer the primary source for the logged-in publisher's name.
+// We use userName from useAuth now.
 
 export default function AppHeader() {
-  const { logout, role, userId } = useAuth();
-
-  const publisherName = role === 'publisher' && userId 
-    ? mockPublishers.find(p => p.id === userId)?.name 
-    : null;
+  const { logout, role, userName } = useAuth(); // userName is now directly from useAuth
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -27,7 +24,8 @@ export default function AppHeader() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <UserCircle className="h-5 w-5" />
               <span className="capitalize">
-                {role === 'publisher' && publisherName ? `${role}: ${publisherName}` : role}
+                {/* Display the role and the user's name from useAuth */}
+                {role}: {userName || (role === 'publisher' ? 'Publisher' : 'Subscriber')}
               </span>
             </div>
           )}
