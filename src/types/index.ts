@@ -19,6 +19,11 @@ export interface Publisher {
   avatarUrl?: string; // Kept for display, though API doesn't provide
 }
 
+export interface Subscriber {
+  id: number; // Changed from string to number
+  name: string;
+}
+
 // API specific types based on Swagger for clarity
 export interface ApiNewsItem {
   id: number;

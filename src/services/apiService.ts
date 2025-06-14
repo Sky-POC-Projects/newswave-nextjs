@@ -1,7 +1,7 @@
 // src/services/apiService.ts
 'use server'; // For use in server actions, though parts might be callable from client with care
 
-import type { ApiNewsItem, ApiPublishRequest, ApiPublisherCreateRequest, ApiSubscriberCreateRequest, Publisher, Article } from '@/types';
+import type { ApiNewsItem, ApiPublishRequest, ApiPublisherCreateRequest, ApiSubscriberCreateRequest, Publisher, Article, Subscriber } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -70,11 +70,11 @@ export async function createPublisher(request: ApiPublisherCreateRequest): Promi
   // For now, we'll try to parse JSON. If it's empty, we are in trouble for ID.
   // **Update:** The API test shows it returns the ID in the response body, e.g. `123` (just the ID as int).
   // So the return type should be Promise<number>
-   const publisherId = await apiFetch<number>(`/api/Publishers`, {
+   const publisher = await apiFetch<Publisher>(`/api/Publishers`, {
     method: 'POST',
     body: JSON.stringify(request),
   });
-  return { id: publisherId, name: request.name, description: request.description };
+  return { id: publisher.id, name: publisher.name, description: publisher.description || null };
 }
 
 export async function getPublisher(id: number): Promise<Publisher> {
@@ -94,14 +94,14 @@ export async function publishArticleApi(publisherId: number, request: ApiPublish
 }
 
 // --- Subscriber Endpoints ---
-export async function createSubscriber(request: ApiSubscriberCreateRequest): Promise<{ id: number, name: string | null }> {
+export async function createSubscriber(request: ApiSubscriberCreateRequest): Promise<{ id: number, name: string }> {
   // Similar to createPublisher, POST /api/Subscribers. Assuming it returns ID.
   // API test shows it returns the ID in the response body, e.g. `123` (just the ID as int).
-  const subscriberId = await apiFetch<number>(`/api/Subscribers`, {
+  const subscriber = await apiFetch<Subscriber>(`/api/Subscribers`, {
     method: 'POST',
     body: JSON.stringify(request),
   });
-  return { id: subscriberId, name: request.name };
+  return { id: subscriber.id, name: subscriber.name };
 }
 
 // GET /api/Subscribers/{id} - swagger doesn't specify response, assuming {id, name}
