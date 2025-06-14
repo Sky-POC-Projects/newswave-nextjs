@@ -107,8 +107,8 @@ export async function createSubscriber(request: ApiSubscriberCreateRequest): Pro
 }
 
 // GET /api/Subscribers/{id} - swagger doesn't specify response, assuming {id, name}
-export async function getSubscriber(id: number): Promise<{ id: number, name: string }> {
-   return apiFetch<{id: number, name: string}>(`/api/Subscribers/${id}`, { method: 'GET' });
+export async function getSubscriber(id: number): Promise<Subscriber> {
+   return apiFetch<Subscriber>(`/api/Subscribers/${id}`, { method: 'GET' });
 }
 
 export async function subscribeToPublisher(subscriberId: number, publisherId: number): Promise<void> {
@@ -125,7 +125,7 @@ export async function unsubscribeFromPublisher(subscriberId: number, publisherId
 
 export async function getSubscriberFeed(subscriberId: number, count: number = 10): Promise<ApiNewsItem[]> {
    // The API returns additional fields publisherId and publisherName in NewsItem
-   const apiResponse = await apiFetch<Array<ApiNewsItem & { publisherId: number; publisherName: string }>>(`/api/Subscribers/${subscriberId}/feed?count=${count}`, {
+   const apiResponse = await apiFetch<Array<ApiNewsItem>>(`/api/Subscribers/${subscriberId}/feed?count=${count}`, {
     method: 'GET',
   });
   // Ensure the response items match the expected ApiNewsItem structure for mapping

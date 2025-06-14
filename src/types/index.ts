@@ -22,6 +22,7 @@ export interface Publisher {
 export interface Subscriber {
   id: number; 
   name: string;
+  subscribedPublishers: Publisher[];
 }
 
 // API specific types based on Swagger for clarity
