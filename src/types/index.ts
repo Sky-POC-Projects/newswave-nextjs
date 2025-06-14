@@ -47,3 +47,11 @@ export interface ApiPublishRequest {
   title: string | null;
   body: string | null;
 }
+
+// Represents the response from GET /api/Publishers/{id}
+export interface ApiPublisherDetailsResponse {
+  id: number;
+  name: string;
+  newsFeed: ApiNewsItem[] | null; // newsFeed can be null if no articles
+  // description is not in this specific API endpoint's response
+}

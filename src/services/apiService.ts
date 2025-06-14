@@ -1,7 +1,7 @@
 // src/services/apiService.ts
 'use server'; // For use in server actions, though parts might be callable from client with care
 
-import type { ApiNewsItem, ApiPublishRequest, ApiPublisherCreateRequest, ApiSubscriberCreateRequest, Publisher, Article, Subscriber } from '@/types';
+import type { ApiNewsItem, ApiPublishRequest, ApiPublisherCreateRequest, ApiSubscriberCreateRequest, Publisher, Article, Subscriber, ApiPublisherDetailsResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -82,16 +82,10 @@ export async function createPublisher(request: ApiPublisherCreateRequest): Promi
   return { id: publisher.id, name: publisher.name, description: publisher.description || null };
 }
 
-export async function getPublisher(id: number): Promise<Publisher> {
-  // GET /api/Publishers/{id} - swagger doesn't specify response schema.
-  // Assuming it returns something like { id: number, name: string, description?: string }
-  const apiPublisher =  await apiFetch<{id: number, name: string, description?: string | null}>(`/api/Publishers/${id}`, { method: 'GET' });
-  return {
-    id: apiPublisher.id,
-    name: apiPublisher.name,
-    description: apiPublisher.description || undefined,
-    avatarUrl: undefined, // API doesn't provide this
-  };
+export async function getPublisherDetails(id: number): Promise<ApiPublisherDetailsResponse> {
+  // GET /api/Publishers/{id} - returns publisher details with their newsFeed
+  // Response includes: { id, name, newsFeed: ApiNewsItem[] | null }
+  return apiFetch<ApiPublisherDetailsResponse>(`/api/Publishers/${id}`, { method: 'GET' });
 }
 
 
@@ -147,17 +141,17 @@ export async function getSubscriberFeed(subscriberId: number, count: number = 10
 
 
 // Helper function to map ApiNewsItem to our app's Article type
-// This function is used in subscriber feed page, needs to be async if exported from a 'use server' file.
+// This function is used in subscriber feed page AND publisher dashboard page.
 export async function mapApiNewsItemToArticle(newsItem: ApiNewsItem): Promise<Article> {
-  // The feed from API now includes publisherId and publisherName.
-  // It also includes publishedAt which we can use.
+  // The feed from API (and publisher's newsFeed) includes publisherId, publisherName, and publishedAt.
   return {
     id: newsItem.id,
     title: newsItem.title || 'Untitled Article',
-    content: newsItem.body || '',
+    content: newsItem.body || '', // 'body' from API is the content for our Article
     publishDate: newsItem.publishedAt || new Date().toISOString(), // Use API's publishedAt
-    imageUrl: `https://placehold.co/600x400.png?text=News`, // Placeholder image, API for feed doesn't provide this
+    imageUrl: `https://placehold.co/600x400.png?text=News`, // Placeholder image, API doesn't provide this
     authorId: newsItem.publisherId, 
     authorName: newsItem.publisherName,
+    // summary is not directly available from ApiNewsItem, ArticleCard handles basic truncation if summary is missing
   };
 }
